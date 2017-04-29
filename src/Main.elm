@@ -3,11 +3,12 @@ module Main exposing (..)
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (class, type_, value, size)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onSubmit)
 
 
 type alias Model =
     { players : List Player
+    , playerName : String
     }
 
 
@@ -23,12 +24,8 @@ type alias Scores =
 
 initModel : Model
 initModel =
-    { players =
-        [ Player "Carl-Fredrik" initScores
-        , Player "Philip" initScores
-        , Player "Hugo" initScores
-        , Player "Theres" initScores
-        ]
+    { players = []
+    , playerName = ""
     }
 
 
@@ -39,6 +36,8 @@ initScores =
 
 type Msg
     = Input Player String String
+    | NameInput String
+    | AddPlayer
 
 
 main : Program Never Model Msg
@@ -67,8 +66,36 @@ tableHead model =
                         (\p -> th [] [ text p.name ])
                         model.players
                    )
-                ++ [ th [] [ text "Add" ] ]
+                ++ [ th []
+                        [ newPlayerForm model.playerName
+                        ]
+                   ]
             )
+        ]
+
+
+newPlayerForm : String -> Html Msg
+newPlayerForm playerName =
+    form [ onSubmit AddPlayer ]
+        [ div [ class "field has-addons" ]
+            [ p [ class "control" ]
+                [ input
+                    [ type_ "text"
+                    , class "input is-small"
+                    , value playerName
+                    , onInput NameInput
+                    ]
+                    []
+                ]
+            , p [ class "control" ]
+                [ input
+                    [ type_ "submit"
+                    , value "Lägg till"
+                    , class "button is-small is-info"
+                    ]
+                    []
+                ]
+            ]
         ]
 
 
@@ -188,8 +215,6 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         Input player key val ->
-            -- 1. Find player
-            -- 2. Update score key
             let
                 newVal =
                     case String.toInt val of
@@ -210,3 +235,16 @@ update msg model =
                         model.players
             in
                 { model | players = newPlayers }
+
+        NameInput name ->
+            { model | playerName = name }
+
+        AddPlayer ->
+            let
+                newPlayers =
+                    model.players ++ [ Player model.playerName initScores ]
+            in
+                { model
+                    | players = newPlayers
+                    , playerName = ""
+                }

@@ -2,6 +2,6 @@
 
 ## TODO
 
- - Add validation for each box
- - Add new player message
- - Add ability to disable box
+ - [ ] Add validation for each box
+ - [x] Add new player message
+ - [ ] Add ability to disable box
