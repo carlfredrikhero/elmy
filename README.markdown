@@ -4,4 +4,4 @@
 
  - [ ] Add validation for each box
  - [x] Add new player message
- - [ ] Add ability to disable box
+ - [x] Add ability to disable box
