@@ -2,8 +2,8 @@ module Main exposing (..)
 
 import Dict
 import Html exposing (..)
-import Html.Attributes exposing (class, type_, value, size)
-import Html.Events exposing (onInput, onSubmit)
+import Html.Attributes exposing (class, type_, value, size, disabled)
+import Html.Events exposing (onInput, onSubmit, onClick)
 
 
 type alias Model =
@@ -18,8 +18,15 @@ type alias Player =
     }
 
 
+
+{-
+   Int = Score
+   Bool = Has this been crossed off
+-}
+
+
 type alias Scores =
-    Dict.Dict String Int
+    Dict.Dict String ( Int, Bool )
 
 
 initModel : Model
@@ -29,7 +36,7 @@ initModel =
     }
 
 
-initScores : Dict.Dict String Int
+initScores : Dict.Dict String ( Int, Bool )
 initScores =
     Dict.empty
 
@@ -38,6 +45,7 @@ type Msg
     = Input Player String String
     | NameInput String
     | AddPlayer
+    | Cross String Player
 
 
 main : Program Never Model Msg
@@ -167,10 +175,14 @@ tableRowTotal model =
 playerBonus : Player -> Int
 playerBonus player =
     let
+        singles =
+            [ "aces", "twos", "threes", "fours", "fives", "sixes" ]
+
         total =
             player.scores
+                |> Dict.filter (\k v -> List.member k singles)
                 |> Dict.values
-                |> List.take 6
+                |> List.map Tuple.first
                 |> List.sum
     in
         if total > 62 then
@@ -185,6 +197,8 @@ playerTotal player =
         total =
             player.scores
                 |> Dict.values
+                |> List.filter Tuple.second
+                |> List.map Tuple.first
                 |> List.sum
     in
         total + playerBonus player
@@ -199,15 +213,35 @@ tableCell key player =
                     ""
 
                 Just v ->
-                    toString v
+                    toString (Tuple.first v)
+
+        dis =
+            case (Dict.get key player.scores) of
+                Nothing ->
+                    False
+
+                Just v ->
+                    not (Tuple.second v)
     in
         td []
-            [ input
-                [ type_ "number"
-                , class "input is-small"
-                , onInput (Input player key)
+            [ div [ class "field has-addons" ]
+                [ p [ class "control" ]
+                    [ input
+                        [ type_ "number"
+                        , class "input is-small"
+                        , onInput (Input player key)
+                        , value val
+                        , disabled dis
+                        ]
+                        []
+                    ]
+                , a
+                    [ class "button is-small control bold"
+                    , onClick (Cross key player)
+                    ]
+                    [ text "×"
+                    ]
                 ]
-                []
             ]
 
 
@@ -219,7 +253,9 @@ update msg model =
                 newVal =
                     case String.toInt val of
                         Err msg ->
-                            0
+                            Debug.log
+                                msg
+                                0
 
                         Ok v ->
                             v
@@ -228,7 +264,7 @@ update msg model =
                     List.map
                         (\p ->
                             if p.name == player.name then
-                                { p | scores = Dict.insert key newVal p.scores }
+                                { p | scores = Dict.insert key ( newVal, True ) p.scores }
                             else
                                 p
                         )
@@ -248,3 +284,21 @@ update msg model =
                     | players = newPlayers
                     , playerName = ""
                 }
+
+        Cross key player ->
+            let
+                newPlayers =
+                    List.map
+                        (\p ->
+                            if p.name == player.name then
+                                let
+                                    newScores =
+                                        Dict.insert key ( 0, False ) p.scores
+                                in
+                                    { p | scores = newScores }
+                            else
+                                p
+                        )
+                        model.players
+            in
+                { model | players = newPlayers }
